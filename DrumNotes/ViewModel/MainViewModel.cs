@@ -1,3 +1,4 @@
+using System;
 using System.CodeDom.Compiler;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -44,17 +45,20 @@ namespace DrumNotes.ViewModel
 
         public Song SelectedSong
         {
-            get { return m_selectedSong ?? (m_selectedSong = Songs.First()); }
+            get { return m_selectedSong ?? (m_selectedSong = Songs.FirstOrDefault()); }
             set { m_selectedSong = value; RaisePropertyChanged(); }
         }
 
         public void MainViewModel_Designer()
         {
-            var serializer = new XmlSerializer(typeof(ObservableCollection<Song>));
-            var reader = new StreamReader("Songs.xml");
-            var songs = (ObservableCollection<Song>)serializer.Deserialize(reader);
+            var appDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            if (!File.Exists(appDir+@"\Songs.xml")) return;
+
+            var serializer = new XmlSerializer(typeof (ObservableCollection<Song>));
+            var reader = new StreamReader(appDir+@"\Songs.xml");
+            var songs = (ObservableCollection<Song>) serializer.Deserialize(reader);
             Songs.Clear();
-            foreach(var song in songs) Songs.Add(song);
+            foreach (var song in songs) Songs.Add(song);
             reader.Close();
         }
 
@@ -86,17 +90,19 @@ namespace DrumNotes.ViewModel
             {
                 return m_save ?? (m_save = new RelayCommand(() =>
                 {
+                    var appDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
                     var xsSubmit = new XmlSerializer(typeof(ObservableCollection<Song>));
                     var sww = new StringWriter();
                     var writer = XmlWriter.Create(sww);
                     xsSubmit.Serialize(writer, Songs);
                     var xml = sww.ToString(); // Your xml
-                    if (File.Exists("Songs.xml"))
+                    if (File.Exists(appDir+ @"\Songs.xml"))
                     {
-                        File.Delete("Songs.xml.bak");
-                        File.Move("Songs.xml","Songs.xml.bak");
+                        File.Delete(appDir+@"\Songs.xml.bak");
+                        File.Move(appDir+@"\Songs.xml",appDir+@"\Songs.xml.bak");
                     }
-                    var file = new StreamWriter("Songs.xml",false);
+                    var file = new StreamWriter(appDir+@"\Songs.xml",false);
                     file.Write(xml);
                     file.Close();
                 }));
