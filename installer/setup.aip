@@ -9,7 +9,7 @@
     <ROW Property="ProductCode" Value="1033:{EBAA54C6-8576-4C58-A2DB-25679AF9CB37} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="DrumNotes"/>
-    <ROW Property="ProductVersion" Value="1.0.1" Type="32"/>
+    <ROW Property="ProductVersion" Value="1.0.2" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{B9F332B3-389A-4CB6-825E-7D3A67CFF353}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
