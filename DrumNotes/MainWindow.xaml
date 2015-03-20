@@ -4,9 +4,29 @@
         xmlns:converters="clr-namespace:DrumNotes.Converters"
         xmlns:model="clr-namespace:DrumNotes.Model"
         xmlns:System="clr-namespace:System;assembly=mscorlib"
+        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+        xmlns:command="http://www.galasoft.ch/mvvmlight"
+        xmlns:ei="http://schemas.microsoft.com/expression/2010/interactions"
         DataContext="{Binding Main, Source={StaticResource Locator}}"
+        x:Name="Window"
+        Loaded="MainWindow_OnLoaded"
         Title="MainWindow" Height="480" Width="800">
+    <Window.InputBindings>
+        <KeyBinding Key="N" Modifiers="Control" Command="{Binding AddNewSong}"/>
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding AddNewSection}"/>
+        <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding DeleteSong}"/>
+        <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding DeleteSection}"/>
+    </Window.InputBindings>
     <Window.Resources>
+
+        <Storyboard x:Key="BlinkAnimation">
+            <ColorAnimation Storyboard.TargetName="TempoCircle"
+                     Storyboard.TargetProperty="Fill.Color"
+                     From="Black"
+                     To="White"
+                     Duration="0:0:0:0.2"/>
+        </Storyboard>
+
         <ObjectDataProvider x:Key="sectionTypeChoices" MethodName="GetValues" ObjectType="{x:Type System:Enum}">
             <ObjectDataProvider.MethodParameters>
                 <x:Type TypeName="model:SectionType"></x:Type>
@@ -19,81 +39,111 @@
         </ObjectDataProvider>
         <converters:TypeToColorConverter x:Key="typeToColorConverter" />
     </Window.Resources>
-    <Viewbox StretchDirection="Both"  Stretch="Uniform">
-    <Grid Width="800" Height="480">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*" />
-            <ColumnDefinition Width="4*" />
-            <ColumnDefinition Width="{Binding EditWidth}" />
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="50"/>
-            <RowDefinition Height="1*"/>
-        </Grid.RowDefinitions>
-        
-        <Menu Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3">
-            <MenuItem Header="File">
-                <MenuItem Header="Save" Command="{Binding Save}"/>
-            </MenuItem>
-                <MenuItem Header="Insert">
+
+    <Viewbox x:Name="ViewBox" StretchDirection="Both"  Stretch="Uniform">
+        <Grid Width="800" Height="480">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="4*" />
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="50"/>
+                <ColumnDefinition Width="{Binding EditWidth}" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="50"/>
+                <RowDefinition Height="1*"/>
+            </Grid.RowDefinitions>
+
+            <Menu Background="White" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4">
+                <MenuItem Header="File">
+                    <MenuItem Header="Save" Command="{Binding Save}"/>
+                </MenuItem>
+                <MenuItem Header="Edit">
                     <MenuItem Header="New Song" Command="{Binding AddNewSong}"/>
                     <MenuItem Header="New Section" Command="{Binding AddNewSection}"/>
+                    <Separator/>
+                    <MenuItem Header="Delete Section" Command="{Binding DeleteSection}"/>
+                    <MenuItem Header="Delete Song" Command="{Binding DeleteSong}"/>
                 </MenuItem>
                 <MenuItem Header="Options">
                     <MenuItem Header="Toggle edit mode" Command="{Binding ToggleEditMode}"/>
                 </MenuItem>
             </Menu>
-        
-        <!--<ToolBar Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3">
-            <Button Command="{Binding Save}">Save</Button>
-            <Button Command="{Binding AddNewSong}">New Song</Button>
-            <Button Command="{Binding AddNewSection}">New Section</Button>
-            <Button Command="{Binding ToggleEditMode}">Toggle edit mode</Button>
-        </ToolBar>-->
-        
-        <Label FontSize="18" Grid.Row="1" Grid.Column="0" VerticalAlignment="Bottom" HorizontalAlignment="Center">Sanger:</Label>
-        
-        <ListBox BorderThickness="0,2,0,0" BorderBrush="Black" HorizontalContentAlignment="Stretch" Grid.Row="2" Grid.Column="0" ItemsSource="{Binding Songs}" SelectedItem="{Binding SelectedSong}">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <Border BorderBrush="Black" BorderThickness="0,0,0,1">
-                        <StackPanel>
-                            <Label Content="{Binding Title}"/>
-                        </StackPanel>
-                    </Border>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
-        
-        <TextBox Margin="10,0,10,4" VerticalAlignment="Bottom" FontSize="18" BorderBrush="Transparent" BorderThickness="0" Grid.Row="1" Grid.Column="1" Text="{Binding SelectedSong.Title, FallbackValue='Song title'}"/>
-        
-        <ListBox IsSynchronizedWithCurrentItem="True" HorizontalContentAlignment="Stretch" BorderBrush="Black" BorderThickness="0,2,0,0" Grid.Row="2" Grid.Column="1" ItemsSource="{Binding SelectedSong.Sections}" SelectedItem="{Binding SelectedSong.SelectedSection}">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <Border Background="{Binding Type, Converter={StaticResource typeToColorConverter}}" BorderBrush="Black" BorderThickness="0,0,0,1">
-                        <StackPanel Orientation="Horizontal">
+
+            <Label FontSize="18" Grid.Row="1" Grid.Column="0" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="0,0,0,2">Sangliste</Label>
+            <ListBox BorderThickness="0,2,0,0" BorderBrush="Black" HorizontalContentAlignment="Stretch" Grid.Row="2" Grid.Column="0" ItemsSource="{Binding Songs}" SelectedItem="{Binding SelectedSong}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderBrush="Black" BorderThickness="0,0,0,1">
+                            <StackPanel>
+                                <Label Content="{Binding Title}"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <TextBox Background="Transparent" Margin="10,0,10,4" VerticalAlignment="Bottom" FontSize="18" BorderBrush="Transparent" BorderThickness="0" Grid.Row="1" Grid.Column="1" Text="{Binding SelectedSong.Title, FallbackValue='Song title'}" Grid.ColumnSpan="1"/>
+
+            <Canvas VerticalAlignment="Bottom" Margin="2"  Height="30" Width="30" x:Name="CircleCanvas" Grid.Column="3" Grid.Row="1">
+                
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="MouseDown">
+                        <command:EventToCommand Command="{Binding Mode=OneWay, Path=TempoClicked}"/>
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+                <Ellipse x:Name="TempoCircle" Fill="White" Stroke="Black" Width="30" Height="30" >
+                    <Ellipse.Style>
+                        <Style TargetType="{x:Type Ellipse}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding StartAnimation,Mode=OneWay}" Value="ON">
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation 
+                                                     Storyboard.TargetProperty="Fill.Color"
+                                                     From="Black"
+                                                     To="White"
+                                                     Duration="0:0:0:5"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Ellipse.Style>
+                </Ellipse>
+            </Canvas>
+
+            <TextBox Background="Transparent"  Margin="10,0,10,4" BorderBrush="Transparent" BorderThickness="0"  VerticalAlignment="Bottom" FontSize="18" Grid.Column="2" Grid.Row="1" Text="{Binding SelectedSong.Tempo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+            <ListBox IsSynchronizedWithCurrentItem="True" HorizontalContentAlignment="Stretch" BorderBrush="Black" BorderThickness="0,2,0,0" Grid.Row="2" Grid.Column="1" ItemsSource="{Binding SelectedSong.Sections}" SelectedItem="{Binding SelectedSong.SelectedSection}" Grid.ColumnSpan="3">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{Binding Type, Converter={StaticResource typeToColorConverter}}" BorderBrush="Black" BorderThickness="0,0,0,1">
+                            <StackPanel Orientation="Horizontal">
                                 <Label Content="{Binding Type}" Width="85"/>
                                 <Label Content="{Binding Intensity}" Width="85"/>
                                 <Label Content="{Binding Note}"/>
                             </StackPanel>
-                    </Border>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
-        
-        <Label FontSize="18" Grid.Row="1" VerticalAlignment="Bottom" Grid.Column="2">Edit</Label>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
 
-            <Border Grid.Row="2" Grid.Column="2" BorderBrush="Black" BorderThickness="0,2,0,0">
-            <StackPanel>
+            <Label FontSize="18" Grid.Row="1" VerticalAlignment="Bottom" Grid.Column="4">Edit</Label>
+
+            <Border Grid.Row="2" Grid.Column="4" BorderBrush="Black" BorderThickness="0,2,0,0">
+                <StackPanel>
                     <ComboBox ItemsSource="{Binding Source={StaticResource sectionTypeChoices}}" SelectedItem="{Binding SelectedSong.SelectedSection.Type}"/>
                     <ComboBox ItemsSource="{Binding Source={StaticResource intentityLevelChoices}}" SelectedItem="{Binding SelectedSong.SelectedSection.Intensity}"/>
                     <TextBox AcceptsReturn="True" TextWrapping="Wrap" Text="{Binding SelectedSong.SelectedSection.Note}" Height="100"></TextBox>
                     <Button Command="{Binding MoveUp}">˄</Button>
                     <Button Command="{Binding MoveDown}">˅</Button>
                 </StackPanel>
-        </Border>
-        
-    </Grid>
+            </Border>
+
+        </Grid>
     </Viewbox>
 </Window>

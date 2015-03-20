@@ -17,11 +17,22 @@ namespace DrumNotes.Model
         private ObservableCollection<Section> m_sections;
         private Section m_selectedSection;
         private ICollectionView m_sectionsView;
+        private int m_tempo;
 
         public string Title
         {
             get { return m_title; }
             set { m_title = value; OnPropertyChanged(); }
+        }
+
+        public int Tempo
+        {
+            get { return m_tempo; }
+            set
+            {
+                m_tempo = value;
+                OnPropertyChanged();
+            }
         }
 
         public Section SelectedSection

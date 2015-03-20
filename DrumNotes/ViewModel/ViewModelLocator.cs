@@ -12,6 +12,7 @@
   See http://www.galasoft.ch/mvvm
 */
 
+using DrumNotes.Util;
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Ioc;
 using Microsoft.Practices.ServiceLocation;
@@ -24,6 +25,7 @@ namespace DrumNotes.ViewModel
         {
             ServiceLocator.SetLocatorProvider(() => SimpleIoc.Default);
             SimpleIoc.Default.Register<MainViewModel>();
+            SimpleIoc.Default.Register<TempoUtility>();
         }
 
         public MainViewModel Main

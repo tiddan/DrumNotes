@@ -1,13 +1,21 @@
 using System;
 using System.CodeDom.Compiler;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Data;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Windows;
+using System.Windows.Media.Animation;
 using System.Xml;
 using System.Xml.Serialization;
 using DrumNotes.Model;
+using DrumNotes.Util;
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
+using GalaSoft.MvvmLight.Ioc;
 
 namespace DrumNotes.ViewModel
 {
@@ -22,6 +30,17 @@ namespace DrumNotes.ViewModel
         private RelayCommand m_toggleEditMode;
         private string m_editWidth;
         private RelayCommand m_addNewSection;
+        private RelayCommand m_tempoClicked;
+        private DateTime m_lastTempoClick;
+        private double m_tempoAverage;
+
+        protected TempoUtility m_tempoUtility = SimpleIoc.Default.GetInstance<TempoUtility>();
+        private List<double> m_tempoAverages;
+        private int m_tempoAverageInt;
+        protected BackgroundWorker m_bgWorker = new BackgroundWorker();
+        private string m_startAnimation;
+        private RelayCommand m_deleteSong;
+        private RelayCommand m_deleteSection;
 
         /// <summary>
         /// Initializes a new instance of the MainViewModel class.
@@ -29,6 +48,19 @@ namespace DrumNotes.ViewModel
         public MainViewModel()
         {
             MainViewModel_Designer();
+
+            m_bgWorker.DoWork += (sender, args) =>
+            {
+                while (true)
+                {
+                    StartAnimation = "ON";
+                    StartAnimation = "OFF";
+
+                    Thread.Sleep(500);
+                }
+            };
+
+            m_bgWorker.RunWorkerAsync();
         }
 
         public string EditWidth
@@ -47,6 +79,30 @@ namespace DrumNotes.ViewModel
         {
             get { return m_selectedSong ?? (m_selectedSong = Songs.FirstOrDefault()); }
             set { m_selectedSong = value; RaisePropertyChanged(); }
+        }
+
+        public DateTime LastTempoClick
+        {
+            get { return m_lastTempoClick; }
+            set { m_lastTempoClick = value; RaisePropertyChanged(); }
+        }
+
+        public string StartAnimation
+        {
+            get { return m_startAnimation; }
+            set { m_startAnimation = value; RaisePropertyChanged(); }
+        }
+
+        public double TempoAverage
+        {
+            get { return m_tempoAverage; }
+            set { m_tempoAverage = value; RaisePropertyChanged(); }
+        }
+
+        public List<double> TempoAverages
+        {
+            get { return m_tempoAverages ?? (m_tempoAverages = new List<double>()); }
+            set { m_tempoAverages = value; RaisePropertyChanged(); }
         }
 
         public void MainViewModel_Designer()
@@ -68,7 +124,9 @@ namespace DrumNotes.ViewModel
             {
                 return m_addNewSong ?? (m_addNewSong = new RelayCommand(() =>
                 {
-                    Songs.Add(new Song{Title = "New Song"});
+                    var newSong = new Song {Title = "New Song", Tempo = 60};
+                    Songs.Add(newSong);
+                    SelectedSong = newSong;
                 }));
             }
         }
@@ -79,7 +137,9 @@ namespace DrumNotes.ViewModel
             {
                 return m_addNewSection ?? (m_addNewSection = new RelayCommand(() =>
                 {
-                    SelectedSong.Sections.Add(new Section{Intensity = IntensityLevels.Normal, Type = SectionType.Verse});
+                    var newSection = new Section {Intensity = IntensityLevels.Normal, Type = SectionType.Verse};
+                    SelectedSong.Sections.Add(newSection);
+                    SelectedSong.SelectedSection = newSection;
                 }));
             }
         }
@@ -125,7 +185,6 @@ namespace DrumNotes.ViewModel
             }
         }
 
-
         public RelayCommand MoveDown
         {
             get
@@ -152,6 +211,62 @@ namespace DrumNotes.ViewModel
                     EditWidth = EditWidth == "3*" ? "0" : "3*";
                 }));
             }
+        }
+
+        public RelayCommand TempoClicked
+        {
+            get
+            {
+                return m_tempoClicked ?? (m_tempoClicked = new RelayCommand(() =>
+                {
+                    if (DateTime.Now - LastTempoClick > new TimeSpan(0, 0, 3))
+                    {
+                        Console.WriteLine(@"Resetting time");
+                        LastTempoClick = DateTime.Now;
+                        TempoAverages = new List<double>();
+                        TempoAverage = 0;
+                    }
+                    else
+                    {
+                        var now = DateTime.Now;
+                        var tempo = m_tempoUtility.CalculateTampo(LastTempoClick, now);
+
+                        TempoAverages.Add(tempo);
+                        TempoAverage = TempoAverages.Sum()/TempoAverages.Count;
+                        SelectedSong.Tempo = (int)Math.Round(TempoAverage);
+
+                        LastTempoClick = now;
+                        Console.WriteLine(@"Current tempo: " + SelectedSong.Tempo);
+                    }
+                }));
+            }
+        }
+
+        public RelayCommand DeleteSong
+        {
+            get
+            {
+                return m_deleteSong ?? (m_deleteSong = new RelayCommand(() =>
+                {
+                    Songs.Remove(SelectedSong);
+                    var lastSong = Songs.LastOrDefault();
+                    if(lastSong!=null) SelectedSong = lastSong;
+                }));
+            }
+        }
+
+        public RelayCommand DeleteSection
+        {
+            get
+            {
+                return m_deleteSection ?? (m_deleteSection = new RelayCommand(() =>
+                {
+                    SelectedSong.Sections.Remove(SelectedSong.SelectedSection);
+                    var lastSection = SelectedSong.Sections.LastOrDefault();
+                    if (lastSection != null) SelectedSong.SelectedSection = lastSection;
+                }));
+            }
+            
         }
     }
 }
